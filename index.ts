@@ -3,18 +3,19 @@ import express from 'express';
 import rateLimit from 'express-rate-limit'
 require('dotenv').config();
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 let provider: ethers.providers.JsonRpcProvider
 let wallet: ethers.Wallet;
 let faucetAmount: ethers.BigNumber;
 const app = express();
-const limiter = 
 
-app.use('/request-funds', getRateLimiter(2*60*1000, 1));
+app.use('/request-funds', getRateLimiter(60*60*1000, 1));
 app.use(express.json());
 
 app.post('/request-funds', async(req, res) => {
-    console.log("body", req.body);
+    if (!req.body.address) {
+        return res.status(400).send({"error": "missing address"});
+    }
     if(process.env.PRIVATE_KEY) {
         let gasPrice = await provider.getGasPrice();
         let tx = await wallet.sendTransaction({
@@ -23,10 +24,9 @@ app.post('/request-funds', async(req, res) => {
             gasPrice: gasPrice,
             gasLimit: 21000,
         });
-        let txConfirmed = await provider.waitForTransaction(tx.hash, 3);
-        // tx.wait();
+        let txConfirmed = await provider.waitForTransaction(tx.hash, 1);
         console.log(txConfirmed);
-        res.send({"tx hash": tx.hash});
+        res.status(200).send({"tx hash": tx.hash});
     }
 })
 
@@ -49,8 +49,6 @@ app.listen(port, () => {
     else {
         throw new Error("Missing env variables");
     }
-
-
 })
 
 function getRateLimiter(periodInMs: number, maxRequests: number) {
