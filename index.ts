@@ -24,8 +24,6 @@ app.post('/request-funds', async(req, res) => {
             gasPrice: gasPrice,
             gasLimit: 21000,
         });
-        let txConfirmed = await provider.waitForTransaction(tx.hash, 1);
-        console.log(txConfirmed);
         res.status(200).send({"tx hash": tx.hash});
     }
 })
